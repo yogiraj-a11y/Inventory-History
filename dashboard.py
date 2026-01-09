@@ -1,7 +1,8 @@
 import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
-
+import os
+st.write("Files in the current directory:", os.listdir("."))
 # ==========================================
 # SETUP & CONFIG
 # ==========================================
@@ -167,4 +168,5 @@ if target_asin:
                 st.info("No EU Orders found.")
 
 else:
+
     st.info("👈 Please enter an ASIN in the sidebar.")
