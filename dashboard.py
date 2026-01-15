@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
+import datetime
 
 # ==========================================
 # SETUP & CONFIG
@@ -44,9 +45,11 @@ st.sidebar.header("Filters")
 # Date Logic
 min_date = df_inv['Date'].min()
 max_date = df_inv['Date'].max()
+today = pd.Timestamp.now().date()
 
+# Set defaults: Start = Earliest Data, End = Today
 start_date = pd.to_datetime(st.sidebar.date_input("Start Date", min_date))
-end_date = pd.to_datetime(st.sidebar.date_input("End Date", max_date))
+end_date = pd.to_datetime(st.sidebar.date_input("End Date", today))
 
 # Search Logic
 unique_asins = df_inv['asin'].unique()
@@ -55,7 +58,7 @@ target_asin = st.sidebar.text_input("Enter ASIN", value="", help="Enter ASIN to 
 # ==========================================
 # MAIN LOGIC
 # ==========================================
-st.title("📦 Inventory & Order Dashboard V2")
+st.title("📦 Inventory & Order History")
 
 if target_asin:
     # 1. Filter Inventory
@@ -74,6 +77,10 @@ if target_asin:
         # Product Info
         latest = asin_inv_filtered.iloc[-1]
         st.write(f"**Product:** {latest['product-name']} | **SKU:** {latest['sku']}")
+        
+        # Dynamic Hyperlink
+        amazon_url = f"https://sellercentral.amazon.co.uk/myinventory/inventory?fulfilledBy=all&page=1&pageSize=25&searchField=all&searchTerm={target_asin}&sort=date_created_desc&status=all&ref_=xx_invmgr_favb_xx"
+        st.markdown(f"🔗 [Click here to Amazon FBA]({amazon_url})")
 
         # Split Data by Region
         inv_uk = asin_inv_filtered[asin_inv_filtered['Region'] == 'UK']
@@ -104,11 +111,11 @@ if target_asin:
                 if not dawson.empty:
                     # Placed
                     placed = dawson.groupby('Order Date')['Quantity'].sum().reset_index()
-                    fig.add_trace(go.Bar(x=placed['Order Date'], y=placed['Quantity'], name='Order Placed (Dawson)', marker_color='purple', opacity=0.6))
+                    fig.add_trace(go.Bar(x=placed['Order Date'], y=placed['Quantity'], width=30000000, name='Order Placed (Dawson)', marker_color="#DE73E7", opacity=0.6))
                     
                     # Dispatched
                     dispatched = dawson.groupby('Dispatch Date')['Quantity'].sum().reset_index()
-                    fig.add_trace(go.Bar(x=dispatched['Dispatch Date'], y=dispatched['Quantity'], name='Dispatched (Dawson)', marker_color='red', opacity=0.6))
+                    fig.add_trace(go.Bar(x=dispatched['Dispatch Date'], y=dispatched['Quantity'], width=30000000, name='Dispatched (Dawson)', marker_color="#E4270E", opacity=0.6))
 
                 # 2. Romania Orders (EU Only)
                 if is_eu:
@@ -116,13 +123,19 @@ if target_asin:
                     if not romania.empty:
                         # Placed (RO)
                         r_placed = romania.groupby('Order Date')['Quantity'].sum().reset_index()
-                        fig.add_trace(go.Bar(x=r_placed['Order Date'], y=r_placed['Quantity'], name='Order Placed (RO)', marker_color='#FF69B4', opacity=0.6)) # Hot Pink
+                        fig.add_trace(go.Bar(x=r_placed['Order Date'], y=r_placed['Quantity'], width=30000000, name='Order Placed (RO)', marker_color="#66F559", opacity=0.6)) # Hot Pink
                         
                         # Dispatched (RO)
                         r_disp = romania.groupby('Dispatch Date')['Quantity'].sum().reset_index()
-                        fig.add_trace(go.Bar(x=r_disp['Dispatch Date'], y=r_disp['Quantity'], name='Dispatched (RO)', marker_color='#8B0000', opacity=0.6)) # Dark Red
+                        fig.add_trace(go.Bar(x=r_disp['Dispatch Date'], y=r_disp['Quantity'], width=30000000, name='Dispatched (RO)', marker_color="#096E11", opacity=0.6)) # Dark Red
 
-            fig.update_layout(title=title, height=500, hovermode="x unified", barmode='group')
+            fig.update_layout(
+                title=title, 
+                height=500, 
+                hovermode="x unified", 
+                barmode='group',
+                xaxis_range=[start_date, end_date] # <--- FORCE X-AXIS TO SELECTED RANGE
+            )
             return fig
 
         # ==========================================
@@ -130,11 +143,11 @@ if target_asin:
         # ==========================================
         
         # 1. UK PLOT
-        st.subheader("🇬🇧 UK Overview")
+        st.subheader("UK Overview")
         st.plotly_chart(create_combo_chart(inv_uk, ord_uk, "UK Inventory & Orders"), use_container_width=True)
 
         # 2. EU PLOT
-        st.subheader("🇪🇺 EU Overview")
+        st.subheader("EU Overview")
         st.plotly_chart(create_combo_chart(inv_eu, ord_eu, "EU Inventory & Orders (Dawson + Romania)", is_eu=True), use_container_width=True)
 
         st.divider()
@@ -147,7 +160,7 @@ if target_asin:
         col1, col2 = st.columns(2)
         
         # Column Helper
-        display_cols = ['Order Date', 'Dispatch Date', 'Quantity', 'Order ID', 'Warehouse', 'Channel Name', 'sku']
+        display_cols = ['Order ID', 'sku' , 'Order Date', 'Quantity', 'Channel Name' , 'Dispatch Date']
 
         with col1:
             st.write("**UK Orders**")
@@ -167,7 +180,4 @@ if target_asin:
                 st.info("No EU Orders found.")
 
 else:
-
     st.info("👈 Please enter an ASIN in the sidebar.")
-
-
