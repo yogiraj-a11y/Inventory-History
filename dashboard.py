@@ -5,7 +5,7 @@ import plotly.graph_objects as go
 # ==========================================
 # SETUP & CONFIG
 # ==========================================
-st.set_page_config(page_title="Inventory & Orders V2", layout="wide")
+st.set_page_config(page_title="Inventory History", layout="wide")
 
 INVENTORY_FILE = "master_inventory_data.parquet"
 ORDERS_FILE = "master_order_data.parquet"
@@ -169,4 +169,5 @@ if target_asin:
 else:
 
     st.info("👈 Please enter an ASIN in the sidebar.")
+
 
